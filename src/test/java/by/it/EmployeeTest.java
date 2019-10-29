@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.*;
@@ -26,7 +27,7 @@ public class EmployeeTest {
         em.persist(new Employee(null, "Paul", 43, 15000, d));
         em.persist(new Employee(null, "Gleb", 37, 15000, d));
         em.persist(new Employee(null, "Li", 62, 13099, d));
-        em.persist(new Employee(null, "Alex", 22, 4500, d));
+        em.persist(new Employee(null, "Yuli", 22, 4500, d));
         em.persist(new Employee(null, null, 18, 300, d));
         em.getTransaction().commit();
         em.clear();
@@ -75,6 +76,8 @@ public class EmployeeTest {
         criteria.select(emp)
                 .where(cb.le(emp.get("age"), 43));
         List<Employee> employees = em.createQuery(criteria).getResultList();
+
+        // em.createQuery("select * from Employee where age <= 43").getResultList();
         employees.forEach(System.out::println);
     }
 
@@ -108,9 +111,10 @@ public class EmployeeTest {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Employee> criteria = cb.createQuery(Employee.class);
         Root<Employee> emp = criteria.from(Employee.class);
-        criteria.select(emp)
-                .where(cb.isNotNull(emp.get("name")));
+        criteria.select(emp).where(cb.isNotNull(emp.get("name")));
 //              .where(cb.isNull(emp.get("name")));
+
+        // select * from Employee where name is not null;
         List<Employee> employees = em.createQuery(criteria).getResultList();
         employees.forEach(System.out::println);
     }
@@ -186,6 +190,7 @@ public class EmployeeTest {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Long> criteria = cb.createQuery(Long.class);
         criteria.select(cb.count(criteria.from(Employee.class)));
+        // select count(*) from Employee
         long count = em.createQuery(criteria).getSingleResult();
         System.out.println(count);
     }
@@ -196,6 +201,7 @@ public class EmployeeTest {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Long> criteria = cb.createQuery(Long.class);
         criteria.select(cb.countDistinct(criteria.from(Employee.class)));
+        // select distinct count(*) from Employee
         long count = em.createQuery(criteria).getSingleResult();
         System.out.println(count);
     }
@@ -224,9 +230,9 @@ public class EmployeeTest {
     public void minTest() {
         EntityManager em = HibernateUtil.getEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaQuery<Double> criteria = cb.createQuery(Double.class);
+        CriteriaQuery<Integer> criteria = cb.createQuery(Integer.class);
         criteria.select(cb.min(criteria.from(Employee.class).get("age")));
-        double count = em.createQuery(criteria).getSingleResult();
+        int count = em.createQuery(criteria).getSingleResult();
         System.out.println(count);
     }
 
@@ -247,20 +253,21 @@ public class EmployeeTest {
         CriteriaQuery<Tuple> criteria = cb.createQuery(Tuple.class);
         Root<Employee> employee = criteria.from(Employee.class);
 
-        criteria.groupBy(employee.get("name"));
-        criteria.multiselect(employee.get("name"), cb.count(employee));
+        criteria.multiselect(employee.get("name").alias("name"),
+                cb.count(employee).alias("cnt"));
         criteria.where(cb.equal(employee.get("name"), "Yuli"));
+        criteria.groupBy(employee.get("name"));
 
         List<Tuple> tuples = em.createQuery(criteria).getResultList();
         tuples.forEach(t -> {
-            String name = (String) t.get(0);
-            long count = (long) t.get(1);
+            String name = (String) t.get("name");
+            long count = (long) t.get("cnt");
             System.out.println("Name:" + name + " count:" + count);
         });
     }
 
     @AfterClass
     public static void cleanUp() {
-        HibernateUtil.closeEMFactory();
+        //HibernateUtil.closeEMFactory();
     }
 }

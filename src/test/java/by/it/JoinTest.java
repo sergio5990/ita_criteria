@@ -1,5 +1,6 @@
 package by.it;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -36,6 +37,7 @@ public class JoinTest {
         qa.getEmployees().add(new Employee(null, "Gleb", 37, 15000, qa));
         qa.getEmployees().add(new Employee(null, "Li", 62, 13099, qa));
         hr.getEmployees().add(new Employee(null, "Alex", 22, 4500, hr));
+
         EntityManager em = HibernateUtil.getEntityManager();
         em.getTransaction().begin();
         em.persist(developer);
@@ -50,9 +52,12 @@ public class JoinTest {
     public void joinTest() {
         EntityManager em = HibernateUtil.getEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
+
         CriteriaQuery<Department> criteria = cb.createQuery(Department.class);
         Root<Department> department = criteria.from(Department.class);
+
         Join<Department, Employee> employeeJoin = department.join("employees", JoinType.INNER);
+
         criteria.where(cb.equal(employeeJoin.get("name"), "Yuli"));
         List<Department> departments = em.createQuery(criteria).getResultList();
         departments.forEach(System.out::println);
